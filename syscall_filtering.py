@@ -3,10 +3,13 @@ from bcc import BPF
 # define BPF program
 # This program acts as a callback. Any time any of the syscalls attached to b occur, the hello function is executed
 prog = """
+//#include "bpf_helpers.h"
+//#include <uapi/linux/bpf.h>
+
 
 // Some kind of struct
 // Not sure what needs to go in it
-struct bpf_map_def my_map = {
+struct bpf_map_def SEC("perf-ev array") my_map = {
 	.type = BPF_MAP_TYPE_PERF_EVENT_ARRAY,
 	.key_size = sizeof(int),
 	.value_size = sizeof(u32),
@@ -15,13 +18,13 @@ struct bpf_map_def my_map = {
 
 BPF_PERF_OUTPUT(events);
 
-
 int hello(void *ctx) {
     // bpf_trace_printk("hello world!\\n");
     u64 key = bpf_get_smp_processor_id();
 
     // 1. This is the function you're trying to use:
-    u64 count =  bpf_perf_event_read(&my_map, BPF_F_CURRENT_CPU);
+    u64 count;
+    count =  bpf_perf_event_read(&my_map, BPF_F_CURRENT_CPU);
 
     
     // 2. Record value of perf event "mem-stores"
